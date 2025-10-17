@@ -23,6 +23,7 @@ import Sidebar, { type SidebarMenuItem } from "@/app/layouts/templates/sidebar";
 import { getSidebarItems } from '@/api/api-client';
 import DashboardContent from '@/app/layouts/templates/dashboardContent';
 import UsersTable, { UsersTableRef } from '@/app/layouts/templates/usersTable';
+import AttendanceTable from '@/app/layouts/templates/attendanceTable';
 import { FormContainer } from '@/app/components/ui/forms';
 
 // Icon mapping helper
@@ -217,11 +218,15 @@ const Dashboard: React.FC = () => {
                     </div>
                 );
             
-            case 'Calendar':
+            case 'Attendance':
                 return (
                     <div>
-                        <h2 className="text-xl font-semibold mb-4">Calendar</h2>
-                        <p className="text-gray-600 dark:text-gray-400">Calendar content goes here</p>
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-semibold">Attendance Management</h2>
+                        </div>
+                        <div className="mt-4">
+                            <AttendanceTable />
+                        </div>
                     </div>
                 );
             

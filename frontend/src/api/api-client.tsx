@@ -144,3 +144,22 @@ export async function getSidebarItems(token: string) {
 
   return response.json();
 }
+
+
+// ATTENDANCE
+export async function getAttendanceRecords(token: string) {
+  const response = await fetch(`${API_BASE_URL}/attendance`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to fetch attendance records');
+  }
+
+  return response.json();
+}

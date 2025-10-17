@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { SupabaseModule } from './supabase/supabase.module';
 import { SidebarModule } from './sidebar/sidebar.module';
+import { AttendanceModule } from './attendance/attendance.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { SidebarModule } from './sidebar/sidebar.module';
     UsersModule,
     SupabaseModule,
     SidebarModule,
+    AttendanceModule,
   ],
   controllers: [AppController],
   providers: [AppService],
