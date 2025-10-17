@@ -6,7 +6,7 @@ import { SelectInput } from "../../components/ui/select_inputs";
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { AnimatedNotification } from '../../components/ui/notifications';
 import { Button } from "../../components/ui/buttons";
-import { createUser, getRoles } from '@/api/api-client';
+import { createUser, getRoles, getDepartments } from '@/api/api-client';
 
 const supabase = createClientComponentClient();
 
@@ -22,6 +22,7 @@ export default function AddUser({ onSuccess }: AddUserProps) {
         firstName: '',
         lastName: '',
         username: '',
+        department: '',
         role: '',
         email: '',
         password: '',
@@ -46,8 +47,8 @@ export default function AddUser({ onSuccess }: AddUserProps) {
         setIsSubmitting(true);
         setShowError(false);
 
-        const { firstName, lastName, username, email, password, role } = formData;
-        if (!firstName || !lastName || !username || !email || !password || !role) {
+        const { firstName, lastName, username, email, password, department, role } = formData;
+        if (!firstName || !lastName || !username || !email || !password || !department || !role) {
             setErrorMessage('Please fill in all required fields.');
             setShowError(true);
             setIsSubmitting(false);
@@ -71,6 +72,7 @@ export default function AddUser({ onSuccess }: AddUserProps) {
                 firstName: '',
                 lastName: '',
                 username: '',
+                department: '',
                 role: '',
                 email: '',
                 password: '',
@@ -92,7 +94,7 @@ export default function AddUser({ onSuccess }: AddUserProps) {
     };
 
     //--------------------------------
-    //ROLE SELECTION
+    //DEPARTMENT & ROLE SELECTION
     //--------------------------------
     type SelectOption = {
         value: string;
@@ -100,27 +102,72 @@ export default function AddUser({ onSuccess }: AddUserProps) {
     };
     
     const [roleOptions, setRoleOptions] = useState<SelectOption[]>([]);
-    const [isLoadingRoles, setIsLoadingRoles] = useState(true);
+    const [isLoadingRoles, setIsLoadingRoles] = useState(false);
     const [roleError, setRoleError] = useState('');
 
+    const [departmentOptions, setDepartmentOptions] = useState<SelectOption[]>([]);
+    const [isLoadingDepartments, setIsLoadingDepartments] = useState(true);
+    const [departmentError, setDepartmentError] = useState('');
+
+    // Fetch departments on component mount
     useEffect(() => {
-        async function fetchRoles() {
+        async function fetchDepartments(){
             try {
                 const { data } = await supabase.auth.getSession();
                 const token = data?.session?.access_token;
 
                 if (!token) {
                     console.error('No authentication token found');
-                    setRoleOptions([
-                        { value: '1', label: 'User' },
-                        { value: '2', label: 'Guest' },
-                    ]);
+                    setDepartmentOptions([]);
+                    setIsLoadingDepartments(false);
+                    return;
+                }
+
+                console.log('Fetching departments with token:', token?.substring(0, 20) + '...');
+                const departments = await getDepartments(token);
+                console.log('Departments received:', departments);
+
+                const mappedDepartments = departments.map((department: { id: string | number; department_name: string }) => ({
+                    value: department.id.toString(),
+                    label: department.department_name
+                }));
+                setDepartmentOptions(mappedDepartments);
+            } catch (error: any) {
+                console.error('Error fetching departments:', error);
+                console.error('Error details:', {
+                    message: error.message,
+                    stack: error.stack,
+                });
+                setDepartmentOptions([]);
+            } finally {
+                setIsLoadingDepartments(false);
+            }
+        }
+        fetchDepartments();
+    }, []);
+
+    // Fetch roles when department changes
+    useEffect(() => {
+        async function fetchRoles() {
+            if (!formData.department) {
+                setRoleOptions([]);
+                return;
+            }
+
+            setIsLoadingRoles(true);
+            try {
+                const { data } = await supabase.auth.getSession();
+                const token = data?.session?.access_token;
+
+                if (!token) {
+                    console.error('No authentication token found');
+                    setRoleOptions([]);
                     setIsLoadingRoles(false);
                     return;
                 }
 
-                console.log('Fetching roles with token:', token?.substring(0, 20) + '...');
-                const roles = await getRoles(token);
+                console.log('Fetching roles for department:', formData.department);
+                const roles = await getRoles(token, formData.department);
                 console.log('Roles received:', roles);
                 
                 const mappedRoles = roles.map((role: { id: string | number; name: string }) => ({
@@ -134,17 +181,24 @@ export default function AddUser({ onSuccess }: AddUserProps) {
                     message: error.message,
                     stack: error.stack,
                 });
-                setRoleOptions([
-                    { value: '1', label: 'User' },
-                    { value: '2', label: 'Guest' },
-                ]);
+                setRoleOptions([]);
             } finally {
                 setIsLoadingRoles(false);
             }
         }
-
         fetchRoles();
-    }, []);
+    }, [formData.department]);
+
+    const handleDepartmentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const value = e.target.value;
+        console.log('Selected department:', value);
+        // Update formData with the department value and reset role
+        setFormData((prev) => ({
+            ...prev,
+            department: value,
+            role: '', // Reset role when department changes
+        }));
+    };
 
     const handleRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const value = e.target.value;
@@ -237,16 +291,37 @@ export default function AddUser({ onSuccess }: AddUserProps) {
 
                     <div>
                         <SelectInput
+                            label="Department"
+                            name="department"
+                            id="department-select"
+                            value={formData.department}
+                            onChange={handleDepartmentChange}
+                            options={departmentOptions}
+                            placeholder={isLoadingDepartments ? "Loading departments..." : "Select a department"}
+                            error={departmentError}
+                            required
+                            disabled={isLoadingDepartments}
+                        />
+                    </div>
+
+                    <div>
+                        <SelectInput
                             label="User Role"
                             name="role"
                             id="role-select"
                             value={formData.role}
                             onChange={handleRoleChange}
                             options={roleOptions}
-                            placeholder={isLoadingRoles ? "Loading roles..." : "Select a role"}
+                            placeholder={
+                                !formData.department 
+                                    ? "Select a department first" 
+                                    : isLoadingRoles 
+                                    ? "Loading roles..." 
+                                    : "Select a role"
+                            }
                             error={roleError}
                             required
-                            disabled={isLoadingRoles}
+                            disabled={!formData.department || isLoadingRoles}
                         />
                     </div>
                     
@@ -255,7 +330,7 @@ export default function AddUser({ onSuccess }: AddUserProps) {
                         variant="primary" 
                         size="medium"
                         className="w-full"
-                        disabled={isSubmitting || isLoadingRoles}
+                        disabled={isSubmitting || isLoadingRoles || isLoadingDepartments}
                     >
                         {isSubmitting ? 'Creating Account...' : 'Create Account'}
                     </Button>

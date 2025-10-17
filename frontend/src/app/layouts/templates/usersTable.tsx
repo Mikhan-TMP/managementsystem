@@ -17,6 +17,7 @@ interface User {
         role_id?: string;
         role_name?: string;
         status?: string;
+        department_name?: string;
     };
 }
 
@@ -216,7 +217,7 @@ const UsersTable = forwardRef<UsersTableRef, UsersTableProps>(({ onViewUser, onE
                 </div>
                 {/* Here */}
                 <div className="flex items-center gap-2">
-                    <label className="text-sm text-gray-700">Show:</label>
+                    <label className="text-sm text-gray-300">Show:</label>
                     <select
                         value={itemsPerPage}
                         onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
@@ -246,6 +247,9 @@ const UsersTable = forwardRef<UsersTableRef, UsersTableProps>(({ onViewUser, onE
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-bold text-white/90 uppercase tracking-wider">
                                 Username
+                            </th>
+                            <th className='px-6 py-3 text-left text-xs font-bold text-white/90 uppercase tracking-wider'>
+                                Department
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-bold text-white/90 uppercase tracking-wider">
                                 Role
@@ -282,6 +286,9 @@ const UsersTable = forwardRef<UsersTableRef, UsersTableProps>(({ onViewUser, onE
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         {user.user_metadata?.username || 'N/A'}
                                     </td>
+                                    <td className='px-6 py-4 whitespace-nowrap'>
+                                        {user.user_metadata?.department_name || 'N/A'}
+                                    </td>   
                                     <td className='px-6 py-4 whitespace-nowrap'>
                                         {user.user_metadata?.role_name || 'N/A'}
                                     </td>

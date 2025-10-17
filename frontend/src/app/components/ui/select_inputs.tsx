@@ -41,7 +41,7 @@ export const SelectInput: React.FC<SelectInputProps> = ({
       {label && (
         <label
           htmlFor={id}
-          className="block text-sm font-medium text-gray-700 mb-2"
+          className="block text-sm font-medium text-white/70 mb-2"
         >
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
@@ -58,9 +58,9 @@ export const SelectInput: React.FC<SelectInputProps> = ({
         className={`
           w-full px-4 py-2.5 
           border border-gray-300 rounded-lg 
-          bg-white text-gray-900
+          bg-gray-900 text-gray-300
           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-          disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-500
+          disabled:bg-gray-900 disabled:cursor-not-allowed disabled:text-gray-500
           transition duration-200 ease-in-out
           ${error ? 'border-red-500 focus:ring-red-500' : ''}
           ${className}
@@ -70,7 +70,7 @@ export const SelectInput: React.FC<SelectInputProps> = ({
           {placeholder}
         </option>
         {options.map((option) => (
-          <option key={option.value} value={option.value}>
+          <option className='text-white' key={option.value} value={option.value}>
             {option.label}
           </option>
         ))}

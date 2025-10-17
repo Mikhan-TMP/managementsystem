@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Headers, UnauthorizedException, Get, Delete, Param, UseGuards, Put } from '@nestjs/common';
+import { Controller, Post, Body, Headers, UnauthorizedException, Get, Delete, Param, UseGuards, Put, Query } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import * as jwt from 'jsonwebtoken';
@@ -46,8 +46,8 @@ export class UsersController {
   }
 
   @Get('roles')
-  async getRoles() {
-    return this.usersService.getRoles();
+  async getRoles(@Query('departmentId') departmentId: string) {
+    return this.usersService.getRoles(departmentId);
   }
 
   @Get(':id')
@@ -60,6 +60,12 @@ export class UsersController {
   @UseGuards(SupabaseAuthGuard)
   async updateUser(@Param('id') id: string, @Body() dto: any) {
     return this.usersService.updateUser(id, dto);
+  }
+
+  @Get('departments/list')
+  @UseGuards(SupabaseAuthGuard)
+  async getDepartments(){
+    return this.usersService.getDepartments();
   }
 
 }

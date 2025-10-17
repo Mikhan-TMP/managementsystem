@@ -28,8 +28,25 @@ export const createUser = async (formData: any, token: string) => {
 
   return result;
 };
-export async function getRoles(token: string) {
-  const response = await fetch(`${API_BASE_URL}/users/roles`, {
+
+export async function getDepartments(token: string) {
+  const response = await fetch(`${API_BASE_URL}/users/departments/list`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to fetch departments');
+  }
+  return response.json();
+
+}
+
+export async function getRoles(token: string, departmentId: string) {
+  const response = await fetch(`${API_BASE_URL}/users/roles?departmentId=${departmentId}`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -44,6 +61,7 @@ export async function getRoles(token: string) {
 
   return response.json();
 }
+
 export async function getUsers(token: string) {
   const response = await fetch(`${API_BASE_URL}/users`, {
     headers: {
@@ -80,6 +98,7 @@ export const updateUser = async (
         username: string;
         email: string;
         roleId: number;
+        departmentId: number;
     },
     token: string
 ) => {
@@ -95,6 +114,7 @@ export const updateUser = async (
             username: userData.username,
             email: userData.email,
             role_id: userData.roleId,
+            department_id: userData.departmentId,
         }),
     });
 

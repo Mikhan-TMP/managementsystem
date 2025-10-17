@@ -6,7 +6,7 @@ import { SelectInput } from "../../components/ui/select_inputs";
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { AnimatedNotification } from '../../components/ui/notifications';
 import { Button } from "../../components/ui/buttons";
-import { getRoles, updateUser } from '@/api/api-client';
+import { getRoles, updateUser, getDepartments } from '@/api/api-client';
 
 const supabase = createClientComponentClient();
 
@@ -30,6 +30,7 @@ export default function EditUser({ userId, onSuccess }: EditUserProps) {
         username: '',
         role: '',
         email: '',
+        department: '',
     });
     
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,6 +40,9 @@ export default function EditUser({ userId, onSuccess }: EditUserProps) {
     const [errorMessage, setErrorMessage] = useState('');
     const [roleOptions, setRoleOptions] = useState<SelectOption[]>([]);
     const [isLoadingRoles, setIsLoadingRoles] = useState(true);
+    const [departmentOptions, setDepartmentOptions] = useState<SelectOption[]>([]);
+    const [isLoadingDepartments, setIsLoadingDepartments] = useState(true);
+    const [departmentError, setDepartmentError] = useState('');
     const [roleError, setRoleError] = useState('');
 
     // Fetch user data and roles on mount
@@ -71,10 +75,11 @@ export default function EditUser({ userId, onSuccess }: EditUserProps) {
                     username: userData.username || '',
                     email: userData.email || '',
                     role: userData.role_id?.toString() || '',
+                    department: userData.department_id?.toString() || '',
                 });
 
                 // Fetch roles
-                const roles = await getRoles(token);
+                const roles = await getRoles(token, userData.department_id);
                 const formattedRoles = roles.map((role: any) => ({
                     value: role.id.toString(),
                     label: role.name,
@@ -93,6 +98,68 @@ export default function EditUser({ userId, onSuccess }: EditUserProps) {
 
         fetchData();
     }, [userId]);
+
+    // Fetch departments on mount
+    useEffect(() => {
+        async function fetchDepartments() {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                const token = session?.access_token;
+
+                if (!token) {
+                    throw new Error('Not authenticated');
+                }
+
+                const departments = await getDepartments(token);
+                const formattedDepartments = departments.map((dept: any) => ({
+                    value: dept.id.toString(),
+                    label: dept.department_name,
+                }));
+                setDepartmentOptions(formattedDepartments);
+            } catch (error: any) {
+                console.error('Error fetching departments:', error);
+                setDepartmentError('Failed to load departments');
+            } finally {
+                setIsLoadingDepartments(false);
+            }
+        }
+
+        fetchDepartments();
+    }, []);
+
+    // Fetch roles when department changes
+    useEffect(() => {
+        async function fetchRolesForDepartment() {
+            if (!formData.department) {
+                setRoleOptions([]);
+                return;
+            }
+
+            setIsLoadingRoles(true);
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                const token = session?.access_token;
+
+                if (!token) {
+                    throw new Error('Not authenticated');
+                }
+
+                const roles = await getRoles(token, formData.department);
+                const formattedRoles = roles.map((role: any) => ({
+                    value: role.id.toString(),
+                    label: role.name,
+                }));
+                setRoleOptions(formattedRoles);
+            } catch (error: any) {
+                console.error('Error fetching roles:', error);
+                setRoleError('Failed to load roles');
+            } finally {
+                setIsLoadingRoles(false);
+            }
+        }
+
+        fetchRolesForDepartment();
+    }, [formData.department]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -117,13 +184,25 @@ export default function EditUser({ userId, onSuccess }: EditUserProps) {
         }
     };
 
+    const handleDepartmentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const value = e.target.value;
+
+        setFormData((prev) => ({
+            ...prev,
+            department: value,
+            role: '', // Reset role when department changes
+        }));
+        
+        setRoleError(''); // Clear role error
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         e.stopPropagation();
         setIsSubmitting(true);
         setShowError(false);
 
-        const { firstName, lastName, username, email, role } = formData;
+        const { firstName, lastName, username, email, role, department } = formData;
 
         try {
             const { data: { session } } = await supabase.auth.getSession();
@@ -139,6 +218,7 @@ export default function EditUser({ userId, onSuccess }: EditUserProps) {
                 username,
                 email,
                 roleId: parseInt(role),
+                departmentId: parseInt(department),
             }, token);
 
             setShowSuccess(true);
@@ -218,6 +298,21 @@ export default function EditUser({ userId, onSuccess }: EditUserProps) {
                             onChange={handleChange}
                             placeholder="johndoe"
                             required
+                        />
+                    </div>
+
+                    <div>
+                        <SelectInput
+                            label="Department"
+                            name="department"
+                            id="department-select"
+                            value={formData.department}
+                            onChange={handleDepartmentChange}
+                            options={departmentOptions}
+                            placeholder={isLoadingDepartments ? "Loading departments..." : "Select a department"}
+                            error={departmentError}
+                            required
+                            disabled={isLoadingRoles}
                         />
                     </div>
 
