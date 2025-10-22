@@ -1,4 +1,3 @@
-// In your NestJS backend: backend/src/auth/guards/supabase-auth.guard.ts
 import {
   Injectable,
   CanActivate,

@@ -4,11 +4,12 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost
 
 // USERS
 export const createUser = async (formData: any, token: string) => {
+  console.log('Creating user with data:', formData);
   const response = await fetch(`${API_BASE_URL}/users`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`, // current user JWT (admin)
+      'Authorization': `Bearer ${token}`, 
     },
     body: JSON.stringify({
       firstName: formData.firstName,
@@ -17,6 +18,7 @@ export const createUser = async (formData: any, token: string) => {
       email: formData.email,
       password: formData.password,
       roleId: parseInt(formData.role),
+      department_id: parseInt(formData.department),
     }),
   });
 
@@ -162,4 +164,22 @@ export async function getAttendanceRecords(token: string) {
   }
 
   return response.json();
+}
+
+export async function submitTimeEntry(accessToken: string, timeData: { time: string, remarks?: string }) {
+    const response = await fetch(`${API_BASE_URL}/attendance/submit-time`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(timeData),
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to submit time entry');
+    }
+
+    return response.json();
 }

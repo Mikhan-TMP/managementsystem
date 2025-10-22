@@ -6,9 +6,10 @@ import React from 'react';
 
 interface FormInputProps {
   label: string;
-  type?: 'text' | 'email' | 'password' | 'number';
+  type?: 'text' | 'email' | 'password' | 'number' |'date' | 'time' | 'datetime-local' | 'tel' | 'url';
   placeholder?: string;
-  value: string | number;
+  value?: string | number | any;
+  defaultValue?: string | number | any;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   name: string;
   id: string;
@@ -16,8 +17,13 @@ interface FormInputProps {
   disabled?: boolean;
   className?: string;
   required?: boolean;
+  autoFocus?: boolean;
+  onFocus?: (e: React.FocusEvent<HTMLInputElement>) => void;
   icon?: React.ReactNode;
   iconPosition?: 'left' | 'right';
+  readonly?: boolean;
+  ref?: any;
+  step?: string | number;
 }
 
 const FormInput: React.FC<FormInputProps> = ({
@@ -29,11 +35,17 @@ const FormInput: React.FC<FormInputProps> = ({
   name,
   id,
   error,
+  autoFocus,
+  onFocus,
   disabled = false,
   className = '',
   required = false,
   icon,
   iconPosition = 'left',
+  readonly = false,
+  ref, 
+  defaultValue,
+  step
 }) => {
   return (
     <div className="w-full mb-4">
@@ -57,11 +69,15 @@ const FormInput: React.FC<FormInputProps> = ({
         <input
           type={type}
           id={id}
+          readOnly={readonly}
+          defaultValue={defaultValue}
           name={name}
           value={value}
           onChange={onChange}
           placeholder={placeholder}
           disabled={disabled}
+          step={step}
+          onFocus={onFocus}
           className={`
             w-full px-4 py-2 
             border rounded-lg 

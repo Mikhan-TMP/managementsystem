@@ -7,7 +7,7 @@ export class UsersService {
   constructor(private readonly supabaseService: SupabaseService) {}
 
   async createUser(dto: CreateUserDto) {
-    const { firstName, lastName, username, email, password, roleId, departmentId } = dto;
+    const { firstName, lastName, username, email, password, roleId, department_id } = dto;
     // Create user in Supabase Auth with all info in metadata
     const { data: authData, error: authError } =
       await this.supabaseService.client.auth.admin.createUser({
@@ -19,7 +19,7 @@ export class UsersService {
           last_name: lastName,
           username,
           role_id: roleId,
-          department_id: departmentId, // Add this
+          department_id: department_id,
           full_name: `${firstName} ${lastName}`,
           status: 'active',
         },
@@ -35,7 +35,7 @@ export class UsersService {
       firstName,
       lastName,
       roleId,
-      departmentId,
+      department_id,
     };
   }
 

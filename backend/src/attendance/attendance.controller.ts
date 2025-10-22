@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, UseGuards, Request, Body } from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
 import { SupabaseAuthGuard } from '../auth/guards/supabase-auth.guard';
 
@@ -8,8 +8,13 @@ export class AttendanceController {
     constructor(private readonly attendanceService: AttendanceService) {}
 
     @Get()
-    async getAllAttendance() {
-        return this.attendanceService.getAllAttendance();
+    async getAllAttendance(@Request() req) {
+        return this.attendanceService.getAllAttendance(req.user);
+    }
+
+    @Post('submit-time')
+    async submitTimeEntry(@Request() req, @Body() body: { time: string, remarks?: string }) {
+        return this.attendanceService.submitTimeEntry(req.user, body);
     }
 
     // @Get(':id')

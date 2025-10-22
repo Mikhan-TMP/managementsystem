@@ -265,7 +265,7 @@ const UsersTable = forwardRef<UsersTableRef, UsersTableProps>(({ onViewUser, onE
                     <tbody className="bg-purple-700/10 divide-y divide-gray-200">
                         {currentUsers.length === 0 ? (
                             <tr>
-                                <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                                <td colSpan={8} className="px-6 py-4 text-center text-gray-500">
                                     {searchTerm ? 'No users found matching your search' : 'No users found'}
                                 </td>
                             </tr>

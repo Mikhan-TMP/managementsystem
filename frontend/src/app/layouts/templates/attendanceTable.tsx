@@ -19,11 +19,8 @@ interface AttendanceRecord {
     updated_at: string;
 }
 
-interface AttendanceTableProps {
-    onViewAttendance?: (attendance: AttendanceRecord) => void;
-}
 
-const AttendanceTable = forwardRef<HTMLDivElement, AttendanceTableProps>(({ onViewAttendance }, ref) => {
+const AttendanceTable = forwardRef<HTMLDivElement>(({  }, ref) => {
     const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -58,7 +55,7 @@ const AttendanceTable = forwardRef<HTMLDivElement, AttendanceTableProps>(({ onVi
     };
 
     const filteredAttendance = attendance.filter(record =>
-        record.user_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        record.user_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         record.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
         record.date.includes(searchTerm) ||
         (record.remarks && record.remarks.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -129,7 +126,7 @@ const AttendanceTable = forwardRef<HTMLDivElement, AttendanceTableProps>(({ onVi
     return (
         <>
             <div className="flex justify-between items-center mb-4 mt-5 gap-4">
-                <div className="flex-1">
+                <div className="relative flex-1 max-w-sm">
                     <FormInput
                         label=''
                         type="text"
@@ -140,6 +137,7 @@ const AttendanceTable = forwardRef<HTMLDivElement, AttendanceTableProps>(({ onVi
                         onChange={(e) => setSearchTerm(e.target.value)}
                         icon={<Search size={20} />}
                         iconPosition="left"
+                        className='text-sm'
                     />
                 </div>
                 <div className="flex items-center gap-2">
@@ -171,9 +169,6 @@ const AttendanceTable = forwardRef<HTMLDivElement, AttendanceTableProps>(({ onVi
                                 User Name
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-bold text-white/90 uppercase tracking-wider">
-                                Date
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-bold text-white/90 uppercase tracking-wider">
                                 Time In
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-bold text-white/90 uppercase tracking-wider">
@@ -187,9 +182,6 @@ const AttendanceTable = forwardRef<HTMLDivElement, AttendanceTableProps>(({ onVi
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-bold text-white/90 uppercase tracking-wider">
                                 Remarks
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-bold text-white/90 uppercase tracking-wider">
-                                Actions
                             </th>
                         </tr>
                     </thead>
@@ -208,9 +200,6 @@ const AttendanceTable = forwardRef<HTMLDivElement, AttendanceTableProps>(({ onVi
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         {record.user_name}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        {formatDate(record.date)}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         {formatTime(record.time_in)}
@@ -234,16 +223,6 @@ const AttendanceTable = forwardRef<HTMLDivElement, AttendanceTableProps>(({ onVi
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         {record.remarks || 'N/A'}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex space-x-2">
-                                            <button
-                                                onClick={() => onViewAttendance?.(record)}
-                                                className="text-blue-600 hover:text-blue-900"
-                                            >
-                                                View
-                                            </button>
-                                        </div>
                                     </td>
                                 </tr>
                             ))

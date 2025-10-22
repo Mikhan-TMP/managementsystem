@@ -17,14 +17,19 @@ import {
     BarChart3,
     MessageSquare,
     Lock,
-    PlusCircle
+    PlusCircle,
+    Timer,
 } from 'lucide-react';
 import Sidebar, { type SidebarMenuItem } from "@/app/layouts/templates/sidebar";
-import { getSidebarItems } from '@/api/api-client';
+import { getSidebarItems, submitTimeEntry } from '@/api/api-client';
 import DashboardContent from '@/app/layouts/templates/dashboardContent';
 import UsersTable, { UsersTableRef } from '@/app/layouts/templates/usersTable';
 import AttendanceTable from '@/app/layouts/templates/attendanceTable';
 import { FormContainer } from '@/app/components/ui/forms';
+import FormInput from '@/app/components/ui/form_input';
+import DigitalClock from '@/app/components/ui/digitalClock';
+import { AnimatedNotification } from '@/app/components/ui/notifications';
+import RecordAttendance from '@/app/layouts/AttendanceManagement/RecordAttendance';
 
 // Icon mapping helper
 const iconMap: { [key: string]: React.ReactNode } = {
@@ -55,6 +60,14 @@ const Dashboard: React.FC = () => {
     const [modal, setModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<any>(null);
     const usersTableRef = useRef<UsersTableRef>(null);
+    
+    // attendance
+    const [showTimeAttendance, setShowTimeAttendance] = useState(false);
+
+    const [showSuccess, setShowSuccess] = useState(false);
+    const [showError, setShowError] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');   
+    const [message, setMessage] = useState('');
 
 
     // Load active section from localStorage on mount
@@ -163,14 +176,7 @@ const Dashboard: React.FC = () => {
             case 'Dashboard':
                 return (
                     <div>
-                        <h2 className="text-xl font-semibold mb-4">Dashboard Content</h2>
-                        <div className="mt-4">
-                            <p className="text-gray-600 dark:text-gray-400">
-                                Welcome to your centralized command center where you can monitor key metrics, track ongoing activities, and access all your essential tools in one place.
-                            </p>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {/* Add your dashboard widgets/cards here */}
+                        <div className="">
                             <DashboardContent />
                         </div>
                     </div>
@@ -223,6 +229,13 @@ const Dashboard: React.FC = () => {
                     <div>
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-xl font-semibold">Attendance Management</h2>
+                            <Button 
+                                variant="secondary"
+                                className='text-sm cursor-pointer'
+                                onClick={() => setShowTimeAttendance(true)}>
+                                <Timer className='w-4 h-4 text-blue-300 mr-2' /> 
+                                Record Attendance
+                            </Button>
                         </div>
                         <div className="mt-4">
                             <AttendanceTable />
@@ -298,6 +311,56 @@ const Dashboard: React.FC = () => {
             </div>
         );
     }
+
+    // Update this function to receive the time as a parameter
+    const handleTimeSubmit = async (timeValue: string) => {
+        console.log("TimeValue received:", timeValue);
+        try {
+            setLoading(true);
+            const { data: { session } } = await supabase.auth.getSession();
+            
+            if (!session?.access_token) {
+                throw new Error('No authentication token found');
+            }
+            
+            if (!timeValue) {
+                throw new Error('Please select a time');
+            }
+
+            // Determine if today is weekend (Saturday = 6, Sunday = 0)
+            const today = new Date();
+            const dayOfWeek = today.getDay();
+            const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+            
+            const response = await submitTimeEntry(session.access_token, {
+                time: timeValue,
+                remarks: isWeekend ? 'Rest Day Overtime' : 'Regular check-in'
+            });
+
+            if (!response || !response.success) {
+                setErrorMessage(response.message || 'Failed to record attendance');
+                setShowError(true);
+            }
+            else{
+                const entryType = response.type === 'time_in' ? 'Time In' : 'Time Out';
+                setMessage(`${entryType} recorded successfully at ${timeValue}`);
+                setShowSuccess(true);
+            }
+
+
+
+            // Close modal
+            setShowTimeAttendance(false);
+            
+            // Refresh attendance table
+        } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : 'Failed to submit time entry');
+            setShowError(true);
+            console.error('Error submitting time entry:', error);
+        } finally {  
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="min-h-screen flex flex-col">
@@ -463,7 +526,7 @@ const Dashboard: React.FC = () => {
                         </FormContainer>
                     </div>
                 )}
-
+                {/* Modal for adding Users */}
                 {showAddUser && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
                         <FormContainer
@@ -491,8 +554,7 @@ const Dashboard: React.FC = () => {
                     </FormContainer>
                 </div>
                 )}
-
-                {/* Edit User Modal */}
+                {/* Modal for Editing User */}
                 {showEditUser && editingUserId && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
                         <FormContainer
@@ -524,7 +586,48 @@ const Dashboard: React.FC = () => {
                         </FormContainer>
                     </div>
                 )}
+
+                {/* Modal for Attendance */}
+                {showTimeAttendance && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+                        <FormContainer
+                            title="Attendance"
+                            description="Record your attendance for the day."
+                            className="w-[400px] mx-auto max-h-[80vh] overflow-y-auto"
+                        >
+                            <RecordAttendance 
+                                onSubmit={handleTimeSubmit}
+                                loading={loading}
+                            />
+                            <div className="flex flex-col gap-3 mt-6">
+                                <button
+                                    type="button"
+                                    onClick={() => { 
+                                        setShowTimeAttendance(false);
+                                    }}
+                                    className="flex-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium py-2.5 px-6 rounded-lg transition-colors"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </FormContainer>
+                    </div>
+                )}
             </div>
+            <AnimatedNotification
+                type="success"
+                message={message}
+                isVisible={showSuccess}
+                onClose={() => setShowSuccess(false)}
+                duration={5000}
+            />
+            <AnimatedNotification
+                type="error"
+                message={errorMessage}
+                isVisible={showError}
+                onClose={() => setShowError(false)}
+                duration={5000}
+            />
         </div>
     );
 };
