@@ -183,3 +183,45 @@ export async function submitTimeEntry(accessToken: string, timeData: { time: str
 
     return response.json();
 }
+
+
+
+
+// dashboard
+export interface DashboardStats {
+    totalUsers: number;
+    totalDepartments: number;
+    attendanceByDay: Array<{ date: string; count: number }>;
+    attendanceRate: number;
+    todayAttendance: number;
+    employmentOverview: Array<{ month: string; count: number }>;
+}
+
+export const getDashboardStats = async (token: string): Promise<DashboardStats> => {
+    try {
+        console.log('Fetching dashboard stats from:', `${API_BASE_URL}/dashboard/stats`);
+        console.log('With token:', token?.substring(0, 20) + '...');
+        
+        const response = await fetch(`${API_BASE_URL}/dashboard/stats`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        console.log('Response status:', response.status);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Error response:', errorText);
+            throw new Error(`Failed to fetch dashboard stats: ${response.status} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        console.log('Dashboard data received:', data);
+        return data;
+    } catch (error) {
+        console.error('Fetch error:', error);
+        throw error;
+    }
+};

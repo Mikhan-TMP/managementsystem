@@ -6,7 +6,7 @@ import { UsersModule } from './users/users.module';
 import { SupabaseModule } from './supabase/supabase.module';
 import { SidebarModule } from './sidebar/sidebar.module';
 import { AttendanceModule } from './attendance/attendance.module';
-
+import { DashboardModule } from './dashboard/dashboard.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -17,6 +17,7 @@ import { AttendanceModule } from './attendance/attendance.module';
     SupabaseModule,
     SidebarModule,
     AttendanceModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],

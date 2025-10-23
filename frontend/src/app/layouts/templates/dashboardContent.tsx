@@ -1,31 +1,94 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../../components/ui/buttons';
 import { File, Folder, List, Notebook, ReceiptText, User2, Users } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, RadialBarChart, RadialBar } from 'recharts';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { getDashboardStats, DashboardStats } from '@/api/api-client';
 
 export default function DashboardContent() {
-    return(
+    const [stats, setStats] = useState<DashboardStats | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const supabase = createClientComponentClient();
 
-        <div className="mt-6  w-full">
+
+    useEffect(() => {
+        fetchDashboardStats();
+    }, []);
+
+    const fetchDashboardStats = async () => {
+        try {
+            setLoading(true);
+            const { data: { session } } = await supabase.auth.getSession();
+            
+            if (!session?.access_token) {
+                throw new Error('No authentication token found');
+            }
+
+            const data = await getDashboardStats(session.access_token);
+            setStats(data);
+            console.log(data);
+            setError(null);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to fetch dashboard stats');
+            console.error('Error fetching dashboard stats:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+                    <p className="mt-4 text-gray-600 dark:text-gray-400">Loading dashboard...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="text-center text-red-500">
+                    <p>Error: {error}</p>
+                    <Button onClick={fetchDashboardStats} className="mt-4">Retry</Button>
+                </div>
+            </div>
+        );
+    }
+
+    if (!stats) return null;
+
+    // Transform attendance data for the chart
+    const attendanceChartData = stats.attendanceByDay.map(item => ({
+        name: new Date(item.date).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' }),
+        value: item.count
+    }));
+
+    return(
+        <div className="mt-6 w-full">
             <h2 className="text-xl font-semibold mb-4">Dashboard</h2>
             <p className="text-gray-600 dark:text-gray-400">
                 Welcome to your centralized command center where you can monitor key metrics, track ongoing activities, and access all your essential tools in one place.
             </p>
+            
             {/* Small Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-5">
                 <SmallCard 
                     titles={["Total Employees", "Departments"]} 
-                    values={["0", "0"]} 
+                    values={[stats.totalUsers.toString(), stats.totalDepartments.toString()]} 
                     icons={[
                         <Users key="users" size={24} color="white" />,
                         <Folder key="folder" size={24} color="white" />
                     ]}
                 />
                 <SmallCard 
-                    titles={["Attendance Rate", "Reports Generated"]} 
-                    values={["0%", "0"]} 
+                    titles={["Attendance Rate", "Today's Attendance"]} 
+                    values={[`${stats.attendanceRate.toFixed(1)}%`, stats.todayAttendance.toString()]} 
                     icons={[
                         <Notebook key="notebook" size={24} color="white" />,
                         <ReceiptText key="receipt" size={24} color="white" />
@@ -40,47 +103,34 @@ export default function DashboardContent() {
                     ]}
                 />
             </div>
+
             {/* Graph Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
                 <GraphCard 
                     title="Employment Overview"
-                    data = {[
-                        { name: 'Jan', value: 400 },
-                        { name: 'Feb', value: 300 },
-                        { name: 'Mar', value: 600 },
-                        { name: 'Apr', value: 800 },
-                        { name: 'May', value: 500 },
-                        { name: 'Jun', value: 700 },
-                    ]}
+                    data={stats.employmentOverview.map(item => ({
+                        name: item.month,
+                        value: item.count
+                    }))}
                     type="line"
-                    />
+                />
                 <GraphCard
-                    title="Attendance Overview"
-                    data = {(() => {
-                        const data = [];
-                        for (let i = 5; i >= 0; i--) {
-                            const date = new Date();
-                            date.setDate(date.getDate() - i);
-                            data.push({
-                                name: date.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' }),
-                                value: Math.floor(Math.random() * (95 - 75 + 1))
-                            });
-                        }
-                        return data;
-                    })()}
+                    title="Attendance Overview (Last 6 Days)"
+                    data={attendanceChartData}
                     type="bar"
-                    />
-                    <GraphCard 
-                        title="Project Overview"
-                        data={[
-                            { name: 'Completed', value: 45 },
-                            { name: 'In Progress', value: 30 },
-                            { name: 'Pending', value: 15 },
-                            { name: 'On Hold', value: 10 }
-                        ]}
-                        type="radar"
-                    />
+                />
+                <GraphCard 
+                    title="Project Overview"
+                    data={[
+                        { name: 'Completed', value: 45 },
+                        { name: 'In Progress', value: 30 },
+                        { name: 'Pending', value: 15 },
+                        { name: 'On Hold', value: 10 }
+                    ]}
+                    type="radar"
+                />
             </div>
+
             {/* Table Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
                 <TableCard 
@@ -99,7 +149,6 @@ export default function DashboardContent() {
                             <User2 key="event1" size={24} color="white" />,
                             <List key="event2" size={24} color="white" />,
                             <Notebook key="event3" size={24} color="white" />
-                            
                         ]}
                         titles={["Team Meeting", "Project Deadline", "HR Workshop"]}
                         dates={["2024-06-05 10:00 AM", "2024-06-10 11:59 PM", "2024-06-12 03:00 PM"]}
@@ -112,7 +161,6 @@ export default function DashboardContent() {
                         ]}
                         titles={["Human Resources", "Development", "Marketing"]}
                         descriptions={["Managing employee relations", "Building software solutions", "Promoting our brand"]}
-
                     />  
                 </div>
                 <TableCard 
@@ -126,10 +174,7 @@ export default function DashboardContent() {
                     ]}
                 />
             </div>
-
- 
         </div>
-
     )
 }
 
@@ -238,6 +283,7 @@ function GraphCard({ title, data, type }: { title: string, data?: any[], type: '
         </div>
     );
 }
+
 //Table Cards
 function TableCard({title, columns, data}: {title: string, columns: string[], data: string[][]}) {
     return (
@@ -283,12 +329,10 @@ function EventsCard({ icons, titles, dates }: { icons: React.ReactNode[]; titles
                         </div>
                     ))}
                 </li>
-
             </ul>
         </div>
     );
 }
-
 
 function DepartmentCard({ icons, titles, descriptions }: { icons: React.ReactNode[]; titles: string[]; descriptions: string[] }) {
     return (
@@ -308,7 +352,6 @@ function DepartmentCard({ icons, titles, descriptions }: { icons: React.ReactNod
                         </div>
                     ))}
                 </li>
-
             </ul>
         </div>
     );
